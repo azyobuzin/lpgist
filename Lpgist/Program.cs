@@ -39,6 +39,7 @@ namespace Lpgist
             }
 
             var isPublic = config.IsPublic;
+            var anonymous = string.IsNullOrEmpty(config.GitHubAccessToken);
             string description = null;
             IReadOnlyList<string> lprunArgs = new string[0];
 
@@ -51,6 +52,9 @@ namespace Lpgist
                         continue;
                     case "--public":
                         isPublic = true;
+                        continue;
+                    case "--anonymous":
+                        anonymous = true;
                         continue;
                     case "--description":
                     case "-d":
@@ -140,7 +144,7 @@ namespace Lpgist
                 stdout);
 
             var client = new GitHubClient(userAgent);
-            if (!string.IsNullOrEmpty(config.GitHubAccessToken))
+            if (!anonymous)
                 client.Credentials = new Credentials(config.GitHubAccessToken);
 
             var gist = client.Gist.Create(newGist).GetAwaiter().GetResult();
@@ -149,7 +153,7 @@ namespace Lpgist
             Console.WriteLine(gist.HtmlUrl);
 
             if (forBlocksorg)
-                Console.WriteLine("http://bl.ocks.org/{0}/{1}", gist.Owner.Login, gist.Id);
+                Console.WriteLine("http://bl.ocks.org/{0}/{1}", gist.Owner?.Login ?? "anonymous", gist.Id);
 
             return 0;
         }
@@ -167,6 +171,8 @@ Options
       upload as a private gist
   --public
       upload as a public gist
+  --anonymous
+      do not use your credentials
   --description <msg>
   -d <msg>
       specify the description of the gist to be uploaded");
